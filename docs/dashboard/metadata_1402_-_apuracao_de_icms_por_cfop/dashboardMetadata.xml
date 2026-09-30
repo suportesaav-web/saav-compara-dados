@@ -1,0 +1,100 @@
+<dashboard titulo="1402 - APURAÇÃO DE ICMS POR CFOP" descricao="Este dashboard realiza a conferência consolidada e analítica de impostos (ICMS, IPI, PIS, COFINS, entre outros) extraídos diretamente da tabela de detalhamento de impostos do Sankhya, permitindo o rastreio desde o agrupamento por CFOP até as configurações históricas da TOP utilizada na nota fiscal." grupo="1400 - FATURAMENTO"><layout>
+  <container orientacao="V" tamanhoRelativo="100">
+    <gadget id="7" />
+  </container>
+</layout><gadgetSS nugdg="7" titulo="1402 - APURAÇÃO DE ICMS POR CFOP" descricao="Este dashboard realiza a conferência consolidada e analítica de impostos (ICMS, IPI, PIS, COFINS, entre outros) extraídos diretamente da tabela de detalhamento de impostos do Sankhya, permitindo o rastreio desde o agrupamento por CFOP até as configurações históricas da TOP utilizada na nota fiscal." categoria="1400 - FATURAMENTO" urlcomponente=""><gadget><prompt-parameters><parameter id="CODEMP" description="Empresa" metadata="entity:Empresa@CODEMP" required="true" keep-last="true" keep-date="false" order="0" label="CODEMP : Entidade/Tabela" /><parameter id="DTENTSAI" description="Dt. Ent Sai" metadata="datePeriod" required="true" keep-last="true" order="1" keep-date="false" label="DTENTSAI : Período" /><parameter id="TIPMOV" description="Tipo Movimento" metadata="singleList:Text" listType="text" required="true" keep-last="true" keep-date="false" show-inactives="false" label="TIPMOV : singleList:Text" order="2"><item value="S" label="Saída" /><item value="E" label="Entrada" /><item value="A" label="Ambas" /></parameter><parameter id="P_CODPARC" description="Informe o Parceiro" metadata="entity:Parceiro@CODPARC" required="false" keep-last="false" keep-date="false" show-inactives="false" label="P_CODPARC : Entidade/Tabela" order="3" /><parameter id="P_CODPROD" description="Informe o Produto" metadata="entity:Produto@CODPROD" required="false" keep-last="false" keep-date="false" show-inactives="false" label="P_CODPROD : Entidade/Tabela" order="4" /><parameter id="P_CODMARCA" description="Informe a Marca" metadata="entity:MarcaProduto@CODIGO" required="false" keep-last="false" keep-date="false" show-inactives="false" label="P_CODMARCA : Entidade/Tabela" order="5" /></prompt-parameters><level id="lvl_ark7m7" description="Principal"><container orientacao="V" tamanhoRelativo="100"><grid id="grd_ark7m8" useNewGrid="S"><expression type="sql" data-source="MGEDS"><![CDATA[SELECT
+    	SUB.*,
+    	SUB.VLRPROD + SUB.VLRIPI + SUB.VLRSUBST + SUB.VLRFRETE + SUB.VLROUTROS AS VLRCONTABIL
+    	FROM (
+    SELECT UFSPAR.UF
+    	, PRO.CODPROD
+    	, PRO.REFFORN AS REFERENCIA
+    	, PAR.CODPARC AS CODPARC 
+    	, PAR.RAZAOSOCIAL AS RAZSOCIAL
+        , PAR.CGC_CPF AS CNPJ_PARCEIRO
+    	, PER.DESCRTIPPARC AS PERFIL
+    	, CAB.NUMNOTA AS NUMNF
+    	, CAB.DTNEG AS DTEMISSAO
+    	, CAB.DTENTSAI
+    	, PRO.DESCRPROD AS DESCRICAO
+    	, PRO.CODGRUPOPROD AS GRUPO
+    	, GRU.DESCRGRUPOPROD AS GRUPODESCRICAO
+    	, PRO.NCM
+    	, ITE.CODCFO AS CFOP
+    	, PRO.MARCA AS MARCA
+    	, ITE.QTDNEG AS QTDCOM
+    	, ITE.VLRUNIT
+    	, ITE.VLRTOT AS VLRPROD
+    	, ITE.BASEICMS AS BCICMS
+    	, ITE.ALIQICMS
+    	, ITE.VLRICMS
+    	, (SELECT D1.VALOR    FROM TGFDIN D1 WHERE D1.CODIMP = 1 AND D1.NUNOTA = ITE.NUNOTA AND SEQUENCIA = ITE.SEQUENCIA AND D1.CODINC = 3) AS VLRICMS_FRETE
+    	, ITE.VLRIPI
+    	, ITE.VLRSUBST
+    	, ITE.BASESUBSTIT
+    	, ITE.CONTROLE AS CONTROLE
+    	--VLR FRETE TEM QUE SER RATEADO
+    	, (CASE WHEN ITE.VLRTOT = 0 OR CAB.VLRFRETE = 0 THEN 0
+    			ELSE ITE.VLRTOT / (SELECT SUM( ITE.VLRTOT )
+               FROM TGFITE ITE
+               WHERE ITE.NUNOTA = CAB.NUNOTA 
+                 AND ITE.SEQUENCIA > 0) END)*CAB.VLRFRETE AS VLRFRETE
+    	, TPO.CODTIPOPER
+    	, TPO.DESCROPER
+    	, ITE.VLRDESC
+    	, (SELECT O1.OPCAO FROM TDDOPC O1 WHERE O1.NUCAMPO = 765 AND O1.VALOR = CAB.CIF_FOB) AS TIPOFRETE
+    	, (CASE WHEN ITE.VLRTOT = 0 OR CAB.VLROUTROS = 0 THEN 0
+    		   ELSE ITE.VLRTOT / (SELECT SUM( ITE.VLRTOT )
+               FROM TGFITE ITE
+               WHERE ITE.NUNOTA = CAB.NUNOTA 
+                 AND ITE.SEQUENCIA > 0 ) END)*CAB.VLROUTROS AS VLROUTROS
+        , (SELECT O1.OPCAO FROM TDDOPC O1 WHERE O1.NUCAMPO = 856 AND O1.VALOR = CAB.TIPMOV) AS TIPMOV
+    	, ITE.VLRREPRED  AS VLRREPRED
+    	, (SELECT SUM(D1.VLRDIFALDEST) FROM TGFDIN D1 WHERE D1.NUNOTA = CAB.NUNOTA AND D1.SEQUENCIA = ITE.SEQUENCIA) AS VLRDIFALDEST
+    	, (SELECT SUM(D1.VLRDIFALREM)  FROM TGFDIN D1 WHERE D1.NUNOTA = CAB.NUNOTA AND D1.SEQUENCIA = ITE.SEQUENCIA) AS VLRDIFALREM
+    	, CAB.AD_PACIENTE AS PACIENTE
+    	, CAB.AD_NOMMEDICO AS MEDICO
+    	, CAB.AD_DTCIRURG AS DT_CIRURGIA
+    	, CAB.AD_CLIENTEUSO AS COD_CLI_USO
+    	, USO.RAZAOSOCIAL AS RAZ_CLI_USO
+        , USO.CGC_CPF AS CNPJ_PARC_USO
+    	, TRA.RAZAOSOCIAL AS TRANSPORTADORA
+    	, CAB.AD_CONVENIO AS CONVENIO
+    	, CAB.AD_PEDCLIENTE AS ORDEM_COMPRA
+    	, CAB.AD_NUMAFP AS NUM_AFP
+    	, CAB.AD_NUMEROCONTRATOCLIENTE AS CONTRATO_CLIENTE
+        , CIDPAR.NOMECID AS CIDADE
+        , TPV.DESCRTIPVENDA AS DESC_TP_PRAZO
+        , GRUPOPIS AS PIS
+        , GRUPOCOFINS AS COFINS
+    
+    	FROM TGFCAB CAB
+    			INNER JOIN TGFPAR PAR ON CAB.CODPARC = PAR.CODPARC
+    			INNER JOIN TSICID CIDPAR ON PAR.CODCID = CIDPAR.CODCID
+    			INNER JOIN TSIUFS UFSPAR ON UFSPAR.CODUF = CIDPAR.UF
+    			LEFT  JOIN TGFTPP PER ON PER.CODTIPPARC = PAR.CODTIPPARC
+                LEFT  JOIN TGFTPV TPV ON TPV.CODTIPVENDA = CAB.CODTIPVENDA AND CAB.DHTIPVENDA = TPV.DHALTER
+    			INNER JOIN TGFITE ITE ON CAB.NUNOTA = ITE.NUNOTA
+    			INNER JOIN TGFPRO PRO ON ITE.CODPROD = PRO.CODPROD
+    			INNER JOIN TGFTOP TPO ON CAB.CODTIPOPER = TPO.CODTIPOPER AND CAB.DHTIPOPER = TPO.DHALTER
+    			INNER JOIN TGFGRU GRU ON PRO.CODGRUPOPROD = GRU.CODGRUPOPROD
+    			LEFT  JOIN TGFPAR USO ON CAB.AD_CLIENTEUSO = USO.CODPARC
+    			LEFT  JOIN TGFPAR TRA ON CAB.CODPARCTRANSP = TRA.CODPARC
+               
+    	WHERE TPO.ATUALLIVFIS <> 'N'
+    	  AND CAB.CODEMP = :CODEMP
+    	  AND CAB.DTNEG BETWEEN :DTENTSAI.INI AND :DTENTSAI.FIN
+    	  AND CAB.STATUSNOTA = 'L'
+          AND (CAB.CODPARC = :P_CODPARC  OR :P_CODPARC  IS NULL)
+          AND (PRO.CODPROD = :P_CODPROD  OR :P_CODPROD  IS NULL)
+          AND (PRO.CODMARCA= :P_CODMARCA OR :P_CODMARCA IS NULL)
+    	  AND TPO.ATUALLIVFIS <> 'N'
+    	  --Se emite NFE, tem que estar aprovada.
+    	  AND ((TPO.NFE IN ('N','D') --AND CAB.STATUSNFE = 'A'
+)
+       OR TPO.NFE NOT IN ('N','D'))
+    	  AND ((CAB.TIPMOV IN ('V', 'E') AND :TIPMOV = 'S') 
+    	   OR (CAB.TIPMOV IN ('C', 'D')  AND :TIPMOV = 'E')
+    	   OR (CAB.TIPMOV IN ('V','E','C', 'D')  AND :TIPMOV = 'A')	  )
+    	) SUB
+    ORDER BY SUB.DTENTSAI, SUB.NUMNF;]]></expression><metadata><field name="UF" label="UF" type="S" visible="true" useFooter="false" /><field name="CODPROD" label="Cód. Prod" type="S" visible="true" useFooter="false" /><field name="REFERENCIA" label="Ref Prod" type="S" visible="true" useFooter="false" /><field name="CODPARC" label="Cod. Parc" type="I" visible="true" useFooter="false" /><field name="RAZSOCIAL" label="Razão Social" type="S" visible="true" useFooter="false" /><field name="CNPJ_PARCEIRO" label="CNPJ_PARCEIRO" type="S" visible="true" useFooter="false" /><field name="PERFIL" label="Perfil" type="S" visible="true" useFooter="false" /><field name="NUMNF" label="Nro Nota" type="I" visible="true" useFooter="false" /><field name="DTEMISSAO" label="Dt. Emissão" type="D" visible="true" useFooter="false" /><field name="DTENTSAI" label="Dt. Ent Sai" type="D" visible="true" useFooter="false" /><field name="DESCRICAO" label="Descrição" type="S" visible="true" useFooter="false" /><field name="GRUPO" label="GRUPO" type="I" visible="true" useFooter="false" /><field name="GRUPODESCRICAO" label="GRUPODESCRICAO" type="S" visible="true" useFooter="false" /><field name="NCM" label="NCM" type="S" visible="true" useFooter="false" /><field name="CFOP" label="CFOP" type="I" visible="true" useFooter="false" /><field name="MARCA" label="MARCA" type="S" visible="true" useFooter="false" /><field name="QTDCOM" label="Qtd Com" type="F" visible="true" useFooter="true" /><field name="VLRUNIT" label="Vlr. Unit" type="C" visible="true" useFooter="false" mask="#.##0,00;(-n)" /><field name="VLRPROD" label="Vlr. Total" type="C" visible="true" useFooter="true" mask="R$ #.##0,00" /><field name="BCICMS" label="Base ICMS" type="C" visible="true" useFooter="true" mask="R$ #.##0,00" /><field name="ALIQICMS" label="Aliq. ICMS" type="F" visible="true" useFooter="false" /><field name="VLRICMS" label="Vlr. ICMS" type="C" visible="true" useFooter="true" mask="R$ #.##0,00" /><field name="VLRICMS_FRETE" label="Vlr. ICMS Frete" type="C" visible="true" useFooter="true" mask="R$ #.##0,00" /><field name="VLRIPI" label="Vlr IPI" type="C" visible="true" useFooter="true" mask="R$ #.##0,00" /><field name="VLRSUBST" label="Vlr ST" type="C" visible="true" useFooter="true" mask="R$ #.##0,00" /><field name="BASESUBSTIT" label="Base ST" type="C" visible="true" useFooter="true" mask="R$ #.##0,00" /><field name="CONTROLE" label="CONTROLE" type="S" visible="true" useFooter="false" /><field name="VLRFRETE" label="Vlr Frete" type="C" visible="true" useFooter="true" mask="R$ #.##0,00" /><field name="CODTIPOPER" label="Cod TOP" type="I" visible="true" useFooter="false" /><field name="DESCROPER" label="TOP" type="S" visible="true" useFooter="false" /><field name="VLRDESC" label="Vlr Desc" type="C" visible="true" useFooter="true" mask="R$ #.##0,00" /><field name="TIPOFRETE" label="Tipo Frete" type="S" visible="true" useFooter="false" /><field name="VLROUTROS" label="Vlr Outros" type="C" visible="true" useFooter="true" mask="R$ #.##0,00" /><field name="TIPMOV" label="Tip Mov" type="S" visible="true" useFooter="false" /><field name="VLRREPRED" label="Vlr. Repasse Redução" type="F" visible="true" useFooter="true" mask="R$ #.##0,00" /><field name="VLRDIFALDEST" label="Vlr. Difal Dest" type="C" visible="true" useFooter="true" mask="R$ #.##0,00" /><field name="VLRDIFALREM" label="Vlr. Difal Orig" type="C" visible="true" useFooter="true" mask="R$ #.##0,00" /><field name="PACIENTE" label="PACIENTE" type="S" visible="true" useFooter="false" /><field name="MEDICO" label="MEDICO" type="S" visible="true" useFooter="false" /><field name="DT_CIRURGIA" label="DT_CIRURGIA" type="D" visible="true" useFooter="false" /><field name="COD_CLI_USO" label="COD_CLI_USO" type="I" visible="true" useFooter="false" /><field name="RAZ_CLI_USO" label="RAZ_CLI_USO" type="S" visible="true" useFooter="false" /><field name="CNPJ_PARC_USO" label="CNPJ_PARC_USO" type="S" visible="true" useFooter="false" /><field name="TRANSPORTADORA" label="TRANSPORTADORA" type="S" visible="true" useFooter="false" /><field name="CONVENIO" label="CONVENIO" type="S" visible="true" useFooter="false" /><field name="ORDEM_COMPRA" label="ORDEM_COMPRA" type="S" visible="true" useFooter="false" /><field name="NUM_AFP" label="NUM_AFP" type="I" visible="true" useFooter="false" /><field name="CONTRATO_CLIENTE" label="CONTRATO_CLIENTE" type="S" visible="true" useFooter="false" /><field name="CIDADE" label="CIDADE" type="S" visible="true" useFooter="false" /><field name="DESC_TP_PRAZO" label="DESC_TP_PRAZO" type="S" visible="true" useFooter="false" /><field name="PIS" label="PIS" type="S" visible="true" useFooter="false" /><field name="COFINS" label="COFINS" type="S" visible="true" useFooter="false" /><field name="VLRCONTABIL" label="Vlr. Contabil" type="C" visible="true" useFooter="true" mask="R$ #.##0,00" /></metadata></grid></container></level></gadget></gadgetSS></dashboard>

@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SAAV Compara Dados</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+</head>
+<body>
+    <div class="background-elements">
+        <div class="glow-orb orb-1"></div>
+        <div class="glow-orb orb-2"></div>
+    </div>
+
+    <div class="app-layout">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar glass">
+            <div class="sidebar-header">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="url(#paint0_linear)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M2 17L12 22L22 17" stroke="url(#paint1_linear)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M2 12L12 17L22 12" stroke="url(#paint2_linear)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <defs>
+                        <linearGradient id="paint0_linear" x1="2" y1="7" x2="22" y2="7" gradientUnits="userSpaceOnUse"><stop stop-color="#4F46E5"/><stop offset="1" stop-color="#7C3AED"/></linearGradient>
+                        <linearGradient id="paint1_linear" x1="2" y1="19.5" x2="22" y2="19.5" gradientUnits="userSpaceOnUse"><stop stop-color="#4F46E5"/><stop offset="1" stop-color="#7C3AED"/></linearGradient>
+                        <linearGradient id="paint2_linear" x1="2" y1="14.5" x2="22" y2="14.5" gradientUnits="userSpaceOnUse"><stop stop-color="#4F46E5"/><stop offset="1" stop-color="#7C3AED"/></linearGradient>
+                    </defs>
+                </svg>
+                <h2>SAAV</h2>
+            </div>
+            <nav class="sidebar-nav">
+                <div class="form-group" style="padding: 0 16px 16px;">
+                    <label style="color: rgba(255,255,255,0.6); font-size: 0.75rem; text-transform: uppercase;">Ambiente</label>
+                    <select id="global-env-selector" class="form-control" style="background: rgba(0,0,0,0.3); border-color: rgba(255,255,255,0.1);">
+                        <option value="sandbox">Sandbox (Testes)</option>
+                        <option value="producao">Produção</option>
+                    </select>
+                </div>
+
+                <a href="#" class="nav-item active" data-target="view-dashboard">
+                    <i class="ph ph-squares-four"></i> Status API
+                </a>
+                <a href="#" class="nav-item" data-target="view-vendas">
+                    <i class="ph ph-shopping-cart"></i> Vendas
+                </a>
+                <a href="#" class="nav-item" data-target="view-compras">
+                    <i class="ph ph-shopping-bag"></i> Compras
+                </a>
+                <a href="#" class="nav-item" data-target="view-produtos">
+                    <i class="ph ph-package"></i> Produtos
+                </a>
+                <a href="#" class="nav-item" data-target="view-parceiros">
+                    <i class="ph ph-users"></i> Parceiros
+                </a>
+                <a href="#" class="nav-item" data-target="view-vendedores">
+                    <i class="ph ph-user-circle-gear"></i> Vendedores
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            
+            <!-- VIEW: DASHBOARD (API STATUS) -->
+            <section id="view-dashboard" class="view-section active">
+                <header class="view-header">
+                    <h1>Monitoramento da Integração</h1>
+                    <p>Status atual de comunicação com a API Gateway Sankhya</p>
+                </header>
+                <div style="display: flex; gap: 1.5rem; flex-wrap: wrap;">
+                    <div class="card glass" style="max-width: 400px; flex: 1;">
+                        <div class="card-header">
+                            <h2>Status do Backend</h2>
+                            <div id="api-indicator" class="status-indicator loading">
+                                <span class="pulse"></span>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="info-row">
+                                <span class="label">Conexão:</span>
+                                <span id="api-status-text" class="value text-loading">Verificando...</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="label">Ambiente:</span>
+                                <span class="value">Sandbox</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="label">Última Verificação:</span>
+                                <span id="api-time" class="value">-</span>
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <button id="refresh-btn" class="btn-primary" style="width: 100%;">Atualizar Status</button>
+                        </div>
+                    </div>
+
+                    <div class="card glass" style="flex: 2; min-width: 400px; display: flex; flex-direction: column;">
+                        <div class="card-header">
+                            <h2><i class="ph ph-users"></i> Últimos Acessos (Usuários)</h2>
+                            <button id="btn-refresh-usuarios" class="btn btn-secondary" style="padding: 0.25rem 0.5rem; display: flex; align-items: center; justify-content: center;">
+                                <i class="ph ph-arrows-clockwise"></i>
+                            </button>
+                        </div>
+                        <div class="table-container" style="flex: 1; max-height: 250px; overflow-y: auto; padding: 0.5rem;">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Cód.</th>
+                                        <th>Nome</th>
+                                        <th>Data Último Acesso</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="usuarios-tbody">
+                                    <tr>
+                                        <td colspan="3" style="text-align: center;">Carregando usuários...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- VIEW: VENDAS -->
+            <section id="view-vendas" class="view-section">
+                <header class="view-header">
+                    <h1>Relatório de Vendas</h1>
+                    <p>Apuração e listagem de notas de saída</p>
+                </header>
+                <div class="card glass filters-card">
+                    <div class="filters-grid">
+                        <div class="form-group">
+                            <label>Data Inicial</label>
+                            <input type="date" class="form-control" id="vendas-dt-ini">
+                        </div>
+                        <div class="form-group">
+                            <label>Data Final</label>
+                            <input type="date" class="form-control" id="vendas-dt-fim">
+                        </div>
+                        <div class="form-group">
+                            <label>Vendedor (Cód)</label>
+                            <input type="text" class="form-control" id="vendas-vendedor" placeholder="Opcional">
+                        </div>
+                        <div class="form-group align-bottom">
+                            <button id="btn-vendas" class="btn-primary w-100">Filtrar Dados</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card glass mt-4">
+                    <div id="vendas-result" class="table-container">
+                        <div class="empty-state">
+                            <i class="ph ph-magnifying-glass"></i>
+                            <p>Preencha os filtros acima e clique em Filtrar para exibir as vendas.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- VIEW: COMPRAS -->
+            <section id="view-compras" class="view-section">
+                <header class="view-header">
+                    <h1>Relatório de Compras</h1>
+                    <p>Entradas e fornecimentos</p>
+                </header>
+                <div class="card glass filters-card">
+                    <div class="filters-grid">
+                        <div class="form-group">
+                            <label>Data Inicial</label>
+                            <input type="date" class="form-control" id="compras-dt-ini">
+                        </div>
+                        <div class="form-group">
+                            <label>Data Final</label>
+                            <input type="date" class="form-control" id="compras-dt-fim">
+                        </div>
+                        <div class="form-group">
+                            <label>Fornecedor (Cód.)</label>
+                            <input type="text" class="form-control" id="compras-fornecedor" placeholder="Opcional">
+                        </div>
+                        <div class="form-group align-bottom">
+                            <button id="btn-compras" class="btn-primary w-100">Filtrar Dados</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card glass mt-4">
+                    <div id="compras-result" class="table-container">
+                        <div class="empty-state">
+                            <i class="ph ph-magnifying-glass"></i>
+                            <p>Preencha os filtros para exibir os resultados.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- VIEW: PRODUTOS -->
+            <section id="view-produtos" class="view-section">
+                <header class="view-header">
+                    <h1>Catálogo de Produtos</h1>
+                    <p>Consulta de itens, grupos e marcas</p>
+                </header>
+                <div class="card glass filters-card">
+                    <div class="filters-grid">
+                        <div class="form-group">
+                            <label>Busca por Nome ou Cód</label>
+                            <input type="text" class="form-control" id="produtos-busca" placeholder="Buscar...">
+                        </div>
+                        <div class="form-group align-bottom">
+                            <button id="btn-produtos" class="btn-primary w-100">Buscar Produtos</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card glass mt-4">
+                    <div id="produtos-result" class="table-container">
+                        <div class="empty-state">
+                            <i class="ph ph-magnifying-glass"></i>
+                            <p>Use o campo acima para buscar produtos.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- VIEW: PARCEIROS -->
+            <section id="view-parceiros" class="view-section">
+                <header class="view-header">
+                    <h1>Gestão de Parceiros</h1>
+                    <p>Clientes, fornecedores e transportadoras</p>
+                </header>
+                <div class="card glass filters-card">
+                    <div class="filters-grid">
+                        <div class="form-group">
+                            <label>Nome / Razão Social</label>
+                            <input type="text" class="form-control" id="parceiros-busca" placeholder="Buscar...">
+                        </div>
+                        <div class="form-group">
+                            <label>Tipo</label>
+                            <select class="form-control" id="parceiros-tipo">
+                                <option value="">Todos</option>
+                                <option value="cliente">Cliente</option>
+                                <option value="fornecedor">Fornecedor</option>
+                            </select>
+                        </div>
+                        <div class="form-group align-bottom">
+                            <button id="btn-parceiros" class="btn-primary w-100">Buscar Parceiros</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card glass mt-4">
+                    <div id="parceiros-result" class="table-container">
+                        <div class="empty-state">
+                            <i class="ph ph-magnifying-glass"></i>
+                            <p>Use a busca para encontrar parceiros.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- VIEW: VENDEDORES -->
+            <section id="view-vendedores" class="view-section">
+                <header class="view-header">
+                    <h1>Equipe de Vendas</h1>
+                    <p>Relatório de vendedores e metas</p>
+                </header>
+                <div class="card glass filters-card">
+                    <div class="filters-grid">
+                        <div class="form-group">
+                            <label>Nome do Vendedor</label>
+                            <input type="text" class="form-control" id="vendedores-busca" placeholder="Buscar...">
+                        </div>
+                        <div class="form-group align-bottom">
+                            <button id="btn-vendedores" class="btn-primary">Buscar Vendedores</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card glass mt-4">
+                    <div id="vendedores-result" class="table-container">
+                        <div class="empty-state">
+                            <i class="ph ph-magnifying-glass"></i>
+                            <p>Faça uma busca para listar os vendedores.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <script src="/static/script.js"></script>
+</body>
+</html>
